@@ -30,13 +30,36 @@ router.get('/users/:userId/transactions', async (req, res) => {
 // Create transaction
 router.post('/users/:userId/transactions', async (req, res) => {
   try {
-    const { title, amount, tags, description, date, isExpense } = req.body;
+    const { id, title, amount, tags, description, date, isExpense } = req.body;
 
     if (!title || amount === undefined || isExpense === undefined) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    if (id) {
+      const existing = await Transaction.findOne({
+        _id: id,
+        userId: req.params.userId
+      });
+
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          transaction: {
+            id: existing._id.toString(),
+            title: existing.title,
+            amount: existing.amount,
+            tags: existing.tags,
+            description: existing.description,
+            date: existing.date.toISOString(),
+            isExpense: existing.isExpense
+          }
+        });
+      }
+    }
+
     const transaction = new Transaction({
+      _id: id || new Date().getTime().toString(),
       userId: req.params.userId,
       title,
       amount,
@@ -134,6 +157,14 @@ router.get('/users/:userId/friends/:friendId/transactions', async (req, res) => 
     
     if (!friend) {
       return res.status(404).json({ error: 'Friend not found' });
+    }
+
+    const isFriend = friend.friendIds.some(
+      id => id.toString() === req.params.userId
+    );
+
+    if (!isFriend) {
+      return res.status(403).json({ error: 'Friendship not approved' });
     }
 
     if (!friend.shareWithFriends) {

@@ -127,13 +127,17 @@ router.get('/users/search/:email', async (req, res) => {
   }
 });
 
-// Add friend
+// Send friend request
 router.post('/users/:userId/friends', async (req, res) => {
   try {
     const { friendId } = req.body;
-    
+
     if (!friendId) {
       return res.status(400).json({ error: 'Friend ID is required' });
+    }
+
+    if (friendId === req.params.userId) {
+      return res.status(400).json({ error: 'Cannot add yourself as a friend' });
     }
 
     const user = await User.findById(req.params.userId);
@@ -143,25 +147,130 @@ router.post('/users/:userId/friends', async (req, res) => {
       return res.status(404).json({ error: 'User or friend not found' });
     }
 
-    // Add friend if not already added
-    if (!user.friendIds.includes(friendId)) {
-      user.friendIds.push(friendId);
-      await user.save();
+    const alreadyFriends = user.friendIds.some(id => id.toString() === friendId);
+    const alreadyRequested = user.friendRequestsSent.some(id => id.toString() === friendId);
+    const alreadyReceived = user.friendRequestsReceived.some(id => id.toString() === friendId);
+
+    if (alreadyFriends) {
+      return res.status(400).json({ error: 'Already friends' });
     }
 
-    // Optionally add reciprocal friendship
-    if (!friend.friendIds.includes(req.params.userId)) {
-      friend.friendIds.push(req.params.userId);
-      await friend.save();
+    if (alreadyRequested || alreadyReceived) {
+      return res.status(400).json({ error: 'Friend request already pending' });
     }
+
+    user.friendRequestsSent.push(friendId);
+    friend.friendRequestsReceived.push(req.params.userId);
+
+    await user.save();
+    await friend.save();
+
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error('Send friend request error:', error);
+    res.status(500).json({ error: 'Failed to send friend request', details: error.message });
+  }
+});
+
+// Get incoming friend requests
+router.get('/users/:userId/friend-requests', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const requesters = await User.find({ _id: { $in: user.friendRequestsReceived } });
+
+    res.json({
+      requests: requesters.map(requester => ({
+        id: requester._id.toString(),
+        email: requester.email,
+        displayName: requester.displayName,
+        photoUrl: requester.photoUrl
+      }))
+    });
+  } catch (error) {
+    console.error('Get friend requests error:', error);
+    res.status(500).json({ error: 'Failed to get friend requests', details: error.message });
+  }
+});
+
+// Accept friend request
+router.post('/users/:userId/friend-requests/:requesterId/accept', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const requester = await User.findById(req.params.requesterId);
+
+    if (!user || !requester) {
+      return res.status(404).json({ error: 'User or requester not found' });
+    }
+
+    const hasRequest = user.friendRequestsReceived.some(
+      id => id.toString() === req.params.requesterId
+    );
+
+    if (!hasRequest) {
+      return res.status(400).json({ error: 'No pending request from this user' });
+    }
+
+    user.friendRequestsReceived = user.friendRequestsReceived.filter(
+      id => id.toString() !== req.params.requesterId
+    );
+    requester.friendRequestsSent = requester.friendRequestsSent.filter(
+      id => id.toString() !== req.params.userId
+    );
+
+    if (!user.friendIds.some(id => id.toString() === req.params.requesterId)) {
+      user.friendIds.push(req.params.requesterId);
+    }
+
+    if (!requester.friendIds.some(id => id.toString() === req.params.userId)) {
+      requester.friendIds.push(req.params.userId);
+    }
+
+    await user.save();
+    await requester.save();
 
     res.json({
       success: true,
       friendIds: user.friendIds.map(id => id.toString())
     });
   } catch (error) {
-    console.error('Add friend error:', error);
-    res.status(500).json({ error: 'Failed to add friend', details: error.message });
+    console.error('Accept friend request error:', error);
+    res.status(500).json({ error: 'Failed to accept friend request', details: error.message });
+  }
+});
+
+// Decline friend request
+router.post('/users/:userId/friend-requests/:requesterId/decline', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    const requester = await User.findById(req.params.requesterId);
+
+    if (!user || !requester) {
+      return res.status(404).json({ error: 'User or requester not found' });
+    }
+
+    user.friendRequestsReceived = user.friendRequestsReceived.filter(
+      id => id.toString() !== req.params.requesterId
+    );
+    requester.friendRequestsSent = requester.friendRequestsSent.filter(
+      id => id.toString() !== req.params.userId
+    );
+
+    await user.save();
+    await requester.save();
+
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error('Decline friend request error:', error);
+    res.status(500).json({ error: 'Failed to decline friend request', details: error.message });
   }
 });
 
@@ -210,7 +319,8 @@ router.get('/users/:userId/friends', async (req, res) => {
         id: friend._id.toString(),
         email: friend.email,
         displayName: friend.displayName,
-        photoUrl: friend.photoUrl
+        photoUrl: friend.photoUrl,
+        shareWithFriends: friend.shareWithFriends
       }))
     });
   } catch (error) {

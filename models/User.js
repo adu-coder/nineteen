@@ -26,6 +26,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  friendRequestsSent: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  friendRequestsReceived: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   shareWithFriends: {
     type: Boolean,
     default: false
