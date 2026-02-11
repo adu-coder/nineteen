@@ -167,8 +167,13 @@ router.get('/users/:userId/friends/:friendId/transactions', async (req, res) => 
       return res.status(403).json({ error: 'Friendship not approved' });
     }
 
-    if (!friend.shareWithFriends) {
-      return res.status(403).json({ error: 'Friend has not enabled sharing' });
+    // Check granular permission: is requesting user in transactionShareFriendIds?
+    const hasPermission = (friend.transactionShareFriendIds || []).some(
+      id => id.toString() === req.params.userId
+    );
+
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Friend has not shared transactions with you' });
     }
 
     const transactions = await Transaction.find({ userId: req.params.friendId })
@@ -189,6 +194,115 @@ router.get('/users/:userId/friends/:friendId/transactions', async (req, res) => 
   } catch (error) {
     console.error('Get friend transactions error:', error);
     res.status(500).json({ error: 'Failed to get friend transactions', details: error.message });
+  }
+});
+
+// Get friend's balance (if sharing is enabled)
+router.get('/users/:userId/friends/:friendId/balance', async (req, res) => {
+  try {
+    const friend = await User.findById(req.params.friendId);
+    
+    if (!friend) {
+      return res.status(404).json({ error: 'Friend not found' });
+    }
+
+    const isFriend = friend.friendIds.some(
+      id => id.toString() === req.params.userId
+    );
+
+    if (!isFriend) {
+      return res.status(403).json({ error: 'Friendship not approved' });
+    }
+
+    // Check granular permission: is requesting user in balanceShareFriendIds?
+    const hasPermission = (friend.balanceShareFriendIds || []).some(
+      id => id.toString() === req.params.userId
+    );
+
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'Friend has not shared balance with you' });
+    }
+
+    // Calculate balance
+    const transactions = await Transaction.find({ userId: req.params.friendId });
+    
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    transactions.forEach(t => {
+      if (t.isExpense) {
+        totalExpense += t.amount;
+      } else {
+        totalIncome += t.amount;
+      }
+    });
+
+    const balance = totalIncome - totalExpense;
+
+    res.json({
+      balance,
+      totalIncome,
+      totalExpense
+    });
+  } catch (error) {
+    console.error('Get friend balance error:', error);
+    res.status(500).json({ error: 'Failed to get friend balance', details: error.message });
+  }
+});
+
+// Get friend's analytics (if sharing is enabled)
+router.get('/users/:userId/friends/:friendId/analytics', async (req, res) => {
+  try {
+    const friend = await User.findById(req.params.friendId);
+    
+    if (!friend) {
+      return res.status(404).json({ error: 'Friend not found' });
+    }
+
+    const isFriend = friend.friendIds.some(
+      id => id.toString() === req.params.userId
+    );
+
+    if (!isFriend) {
+      return res.status(403).json({ error: 'Friendship not approved' });
+    }
+
+    // Check if friend has enabled analytics sharing for all friends
+    if (!friend.analyticsShareEnabled) {
+      return res.status(403).json({ error: 'Friend has not shared analytics' });
+    }
+
+    // Get all expenses and calculate breakdown by tag
+    const transactions = await Transaction.find({ 
+      userId: req.params.friendId,
+      isExpense: true 
+    });
+
+    const tagTotals = {};
+    let totalExpense = 0;
+
+    transactions.forEach(t => {
+      totalExpense += t.amount;
+      t.tags.forEach(tag => {
+        tagTotals[tag] = (tagTotals[tag] || 0) + t.amount;
+      });
+    });
+
+    // Convert to percentages
+    const tagPercentages = {};
+    Object.keys(tagTotals).forEach(tag => {
+      tagPercentages[tag] = totalExpense > 0 
+        ? Math.round((tagTotals[tag] / totalExpense) * 100) 
+        : 0;
+    });
+
+    res.json({
+      tagPercentages,
+      totalExpense: totalExpense // Amount is included but can be hidden on frontend if needed
+    });
+  } catch (error) {
+    console.error('Get friend analytics error:', error);
+    res.status(500).json({ error: 'Failed to get friend analytics', details: error.message });
   }
 });
 
