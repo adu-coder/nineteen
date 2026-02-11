@@ -39,7 +39,10 @@ router.post('/auth/google', async (req, res) => {
         displayName: user.displayName,
         photoUrl: user.photoUrl,
         friendIds: user.friendIds.map(id => id.toString()),
-        shareWithFriends: user.shareWithFriends
+        shareWithFriends: user.shareWithFriends,
+        analyticsShareEnabled: user.analyticsShareEnabled || false,
+        transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
+        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
       }
     });
   } catch (error) {
@@ -63,7 +66,10 @@ router.get('/users/:userId', async (req, res) => {
       displayName: user.displayName,
       photoUrl: user.photoUrl,
       friendIds: user.friendIds.map(id => id.toString()),
-      shareWithFriends: user.shareWithFriends
+      shareWithFriends: user.shareWithFriends,
+      analyticsShareEnabled: user.analyticsShareEnabled || false,
+      transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
+      balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
     });
   } catch (error) {
     console.error('Get user error:', error);
@@ -74,7 +80,7 @@ router.get('/users/:userId', async (req, res) => {
 // Update user profile
 router.put('/users/:userId', async (req, res) => {
   try {
-    const { displayName, photoUrl, shareWithFriends } = req.body;
+    const { displayName, photoUrl, shareWithFriends, analyticsShareEnabled, transactionShareFriendIds, balanceShareFriendIds } = req.body;
     
     const user = await User.findById(req.params.userId);
     
@@ -85,6 +91,9 @@ router.put('/users/:userId', async (req, res) => {
     if (displayName) user.displayName = displayName;
     if (photoUrl !== undefined) user.photoUrl = photoUrl;
     if (shareWithFriends !== undefined) user.shareWithFriends = shareWithFriends;
+    if (analyticsShareEnabled !== undefined) user.analyticsShareEnabled = analyticsShareEnabled;
+    if (transactionShareFriendIds !== undefined) user.transactionShareFriendIds = transactionShareFriendIds;
+    if (balanceShareFriendIds !== undefined) user.balanceShareFriendIds = balanceShareFriendIds;
     
     await user.save();
 
@@ -96,7 +105,10 @@ router.put('/users/:userId', async (req, res) => {
         displayName: user.displayName,
         photoUrl: user.photoUrl,
         friendIds: user.friendIds.map(id => id.toString()),
-        shareWithFriends: user.shareWithFriends
+        shareWithFriends: user.shareWithFriends,
+        analyticsShareEnabled: user.analyticsShareEnabled || false,
+        transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
+        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
       }
     });
   } catch (error) {
@@ -320,7 +332,8 @@ router.get('/users/:userId/friends', async (req, res) => {
         email: friend.email,
         displayName: friend.displayName,
         photoUrl: friend.photoUrl,
-        shareWithFriends: friend.shareWithFriends
+        shareWithFriends: friend.shareWithFriends,
+        analyticsShareEnabled: friend.analyticsShareEnabled || false
       }))
     });
   } catch (error) {
