@@ -50,6 +50,22 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  preferences: {
+    glassBlurLevel: {
+      type: Number,
+      default: 0.35,
+      min: 0,
+      max: 1
+    },
+    showDailyTrend: {
+      type: Boolean,
+      default: false
+    },
+    showHeatmap: {
+      type: Boolean,
+      default: false
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

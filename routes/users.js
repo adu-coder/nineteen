@@ -42,7 +42,8 @@ router.post('/auth/google', async (req, res) => {
         shareWithFriends: user.shareWithFriends,
         analyticsShareEnabled: user.analyticsShareEnabled || false,
         transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
-        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
+        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString()),
+        preferences: user.preferences || {}
       }
     });
   } catch (error) {
@@ -69,7 +70,8 @@ router.get('/users/:userId', async (req, res) => {
       shareWithFriends: user.shareWithFriends,
       analyticsShareEnabled: user.analyticsShareEnabled || false,
       transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
-      balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
+      balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString()),
+      preferences: user.preferences || {}
     });
   } catch (error) {
     console.error('Get user error:', error);
@@ -80,7 +82,7 @@ router.get('/users/:userId', async (req, res) => {
 // Update user profile
 router.put('/users/:userId', async (req, res) => {
   try {
-    const { displayName, photoUrl, shareWithFriends, analyticsShareEnabled, transactionShareFriendIds, balanceShareFriendIds } = req.body;
+    const { displayName, photoUrl, shareWithFriends, analyticsShareEnabled, transactionShareFriendIds, balanceShareFriendIds, preferences } = req.body;
     
     const user = await User.findById(req.params.userId);
     
@@ -94,6 +96,11 @@ router.put('/users/:userId', async (req, res) => {
     if (analyticsShareEnabled !== undefined) user.analyticsShareEnabled = analyticsShareEnabled;
     if (transactionShareFriendIds !== undefined) user.transactionShareFriendIds = transactionShareFriendIds;
     if (balanceShareFriendIds !== undefined) user.balanceShareFriendIds = balanceShareFriendIds;
+    if (preferences !== undefined) {
+      if (preferences.glassBlurLevel !== undefined) user.preferences.glassBlurLevel = preferences.glassBlurLevel;
+      if (preferences.showDailyTrend !== undefined) user.preferences.showDailyTrend = preferences.showDailyTrend;
+      if (preferences.showHeatmap !== undefined) user.preferences.showHeatmap = preferences.showHeatmap;
+    }
     
     await user.save();
 
@@ -108,7 +115,8 @@ router.put('/users/:userId', async (req, res) => {
         shareWithFriends: user.shareWithFriends,
         analyticsShareEnabled: user.analyticsShareEnabled || false,
         transactionShareFriendIds: (user.transactionShareFriendIds || []).map(id => id.toString()),
-        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString())
+        balanceShareFriendIds: (user.balanceShareFriendIds || []).map(id => id.toString()),
+        preferences: user.preferences || {}
       }
     });
   } catch (error) {
