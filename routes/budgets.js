@@ -2,10 +2,17 @@ const express = require('express');
 const router = express.Router();
 const Budget = require('../models/Budget');
 const Transaction = require('../models/Transaction');
+const mongoose = require('mongoose');
 
 // Get all budgets for a user
 router.get('/users/:userId/budgets', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({
+        error: 'Invalid user id'
+      });
+    }
+
     const budgets = await Budget.find({ userId: req.params.userId });
     
     const budgetsWithSpending = await Promise.all(budgets.map(async (budget) => {
@@ -59,6 +66,12 @@ router.post('/users/:userId/budgets', async (req, res) => {
   try {
     const { category, amount, period } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(400).json({
+        error: 'Invalid user id'
+      });
+    }
+
     if (!category || !amount || amount <= 0) {
       return res.status(400).json({ error: 'Invalid budget data' });
     }
@@ -71,7 +84,10 @@ router.post('/users/:userId/budgets', async (req, res) => {
     });
 
     if (existing) {
-      return res.status(400).json({ error: 'Budget already exists for this category' });
+      return res.status(409).json({
+        error: 'Budget already exists for this category',
+        code: 'BUDGET_EXISTS'
+      });
     }
 
     const budget = new Budget({
