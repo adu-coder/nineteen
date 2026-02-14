@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
     },
     showHeatmap: {
       type: Boolean,
-      default: false
+      default: true
     },
     showIncomeExpense: {
       type: Boolean,
@@ -80,6 +80,22 @@ const userSchema = new mongoose.Schema({
     incomeExpenseExpense: {
       type: Boolean,
       default: true
+    },
+    showInvestments: {
+      type: Boolean,
+      default: false
+    },
+    incomeExpenseCalendarYear: {
+      type: Boolean,
+      default: true
+    },
+    excludedTags: {
+      type: [String],
+      default: []
+    },
+    chartOrder: {
+      type: [String],
+      default: ['income_expense', 'daily_trend', 'heatmap', 'investments']
     }
   },
   createdAt: {

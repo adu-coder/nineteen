@@ -104,6 +104,10 @@ router.put('/users/:userId', async (req, res) => {
       if (preferences.incomeExpenseMonthly !== undefined) user.preferences.incomeExpenseMonthly = preferences.incomeExpenseMonthly;
       if (preferences.incomeExpenseIncome !== undefined) user.preferences.incomeExpenseIncome = preferences.incomeExpenseIncome;
       if (preferences.incomeExpenseExpense !== undefined) user.preferences.incomeExpenseExpense = preferences.incomeExpenseExpense;
+      if (preferences.showInvestments !== undefined) user.preferences.showInvestments = preferences.showInvestments;
+      if (preferences.incomeExpenseCalendarYear !== undefined) user.preferences.incomeExpenseCalendarYear = preferences.incomeExpenseCalendarYear;
+      if (preferences.excludedTags !== undefined) user.preferences.excludedTags = preferences.excludedTags;
+      if (preferences.chartOrder !== undefined) user.preferences.chartOrder = preferences.chartOrder;
     }
     
     await user.save();
