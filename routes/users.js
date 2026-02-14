@@ -100,6 +100,10 @@ router.put('/users/:userId', async (req, res) => {
       if (preferences.glassBlurLevel !== undefined) user.preferences.glassBlurLevel = preferences.glassBlurLevel;
       if (preferences.showDailyTrend !== undefined) user.preferences.showDailyTrend = preferences.showDailyTrend;
       if (preferences.showHeatmap !== undefined) user.preferences.showHeatmap = preferences.showHeatmap;
+      if (preferences.showIncomeExpense !== undefined) user.preferences.showIncomeExpense = preferences.showIncomeExpense;
+      if (preferences.incomeExpenseMonthly !== undefined) user.preferences.incomeExpenseMonthly = preferences.incomeExpenseMonthly;
+      if (preferences.incomeExpenseIncome !== undefined) user.preferences.incomeExpenseIncome = preferences.incomeExpenseIncome;
+      if (preferences.incomeExpenseExpense !== undefined) user.preferences.incomeExpenseExpense = preferences.incomeExpenseExpense;
     }
     
     await user.save();

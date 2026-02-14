@@ -64,6 +64,22 @@ const userSchema = new mongoose.Schema({
     showHeatmap: {
       type: Boolean,
       default: false
+    },
+    showIncomeExpense: {
+      type: Boolean,
+      default: true
+    },
+    incomeExpenseMonthly: {
+      type: Boolean,
+      default: true
+    },
+    incomeExpenseIncome: {
+      type: Boolean,
+      default: true
+    },
+    incomeExpenseExpense: {
+      type: Boolean,
+      default: true
     }
   },
   createdAt: {
